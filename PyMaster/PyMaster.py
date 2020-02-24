@@ -29,8 +29,9 @@ musique = pygame.mixer.music.load("musique.wav")
 pygame.mixer.music.set_volume(0.5)
 pygame.mixer.music.play(-1)
 clock = pygame.time.Clock()
-font=pygame.font.Font(None, 48)
-petite_font=pygame.font.Font(None, 30)
+font = pygame.font.Font(None, 48)
+petite_font = pygame.font.Font(None, 30)
+big_font = pygame.font.Font(None, 76)
 
 def ReloadBDD():
     global deck_ex, book, data_deck
@@ -67,6 +68,7 @@ editor_hero_back = pygame.image.load('image/fond.jpg').convert_alpha()
 editor_back = pygame.image.load('image/fond.jpg').convert_alpha()
 choose_deck_back = pygame.image.load('image/fond.jpg').convert_alpha()
 deck_viewer_back = pygame.image.load('image/fond.jpg').convert_alpha()
+end_back = pygame.image.load('image/fond.jpg').convert_alpha()
 current_background = menu_back
 vol_general = 0,5
 
@@ -135,6 +137,7 @@ class Hero:
         self.classe = classe
         self.name = name
         self.stamina = 1
+        self.fatigue = 0
         self.current_stamina = self.stamina
         self.blocked = False
         self.boost_damage = 1
@@ -281,6 +284,9 @@ def redrawGameWindow(background):
 
     if background == deck_viewer_back:
         Deck_Viewer_Background()
+
+    if background == end_back:
+        End_Background()
     
     pygame.display.update()
 
@@ -381,7 +387,7 @@ def Editor_Hero_Background():
         win.blit(fleche_retour_1, (10,650))
 
 def Play_Background():
-    name_entry.update()
+    log.update()
     win.blit(cadre, (-15,-15))
     win.blit(end_turn_0, (1110,450))
     win.blit(player_1.image, (10,440))
@@ -633,6 +639,22 @@ def Deck_Viewer_Background():
     textRect.center = (width/2, 600)
     win.blit(text, textRect)
 
+
+def End_Background():
+    if player_1.hp <= 0:
+        if player_2.hp <= 0:
+            text = big_font.render("Egalité !", True, (255,255,255), (0,0,0)) 
+        else:
+            text = big_font.render("P2 a gagné !", True, (255,255,255), (0,0,0)) 
+    else:
+        text = big_font.render("P1 a gagné !", True, (255,255,255), (0,0,0)) 
+    textRect = text.get_rect()
+    textRect.center = (width/2, height/2-100)
+    win.blit(text, textRect)
+    retour = font.render("Menu Principal", True, (255,255,255), (0,0,0)) 
+    retourRect = retour.get_rect()
+    retourRect.center = (width/2, height/2)
+    win.blit(retour, retourRect)
                             
 #  _____                                            _                 _          
 # |  __ \                                          | |               (_)         
@@ -719,53 +741,57 @@ def draw(number, player):
         for i in range(number):
             rand = random.randint(0,longueur)
             if len(player.hand) >= 10:
-                name_entry.texte.append(f"La carte {data['nom'][player.deck.pop(rand)]}") 
-                name_entry.texte.append(f"à été supprimé de la main de") 
-                name_entry.texte.append(f"{player.name} car il a déjà 10 cartes") 
+                log.texte.append(f"La carte {data['nom'][player.deck.pop(rand)]}") 
+                log.texte.append(f"à été supprimé de la main de") 
+                log.texte.append(f"{player.name} car il a déjà 10 cartes") 
             else:
                 player.hand.append(player.deck.pop(random.randint(0,longueur)))
                 longueur -= 1
     else:
-        name_entry.texte.append(f"{player.name} n'a plus de cartes") 
+        player.fatigue += 1
+        log.texte.append(f"{player.name} n'a plus de cartes,") 
+        log.texte.append(f"il subit {player.fatigue} dégats de fatigue") 
+        player.hp -= player.fatigue
                           
 def damage(number, current_player, other_player):
     can_attack = True
     if other_player.esquive == 1:
-        name_entry.texte.append(f"{other_player.name} esquive les dégats !") 
+        log.texte.append(f"{other_player.name} esquive les dégats !") 
         other_player.esquive = 0
     else:
         if  other_player.secret_neutre1 == True:
-            name_entry.texte.append("L'attaque déclenche le secret Divide") 
-            name_entry.texte.append("réduisant les dégats par deux") 
+            log.texte.append("L'attaque déclenche le secret Divide") 
+            log.texte.append("réduisant les dégats par deux") 
             boost_def(other_player)
             other_player.secret_neutre1 = False
             
         elif other_player.secret_neutre3 == True:
-            name_entry.texte.append("L'attaque déclenche le secret Gotcha") 
-            name_entry.texte.append(f"faisant piocher deux cartes à {other_player.name}") 
+            log.texte.append("L'attaque déclenche le secret Gotcha") 
+            log.texte.append(f"faisant piocher deux cartes à {other_player.name}") 
             draw(2, other_player)
             other_player.secret_neutre3 = False
             
         elif other_player.secret_mage == True:
-            name_entry.texte.append("L'attaque déclenche le secret Répit bloquant les dégats") 
+            log.texte.append("L'attaque déclenche le secret Répit") 
+            log.texte.append("bloquant les dégats") 
             other_player.boost_def = 0
             other_player.secret_mage = False
             
         elif other_player.secret_voleur == True:
-            name_entry.texte.append("L'attaque déclenche le secret Pickpocket") 
-            name_entry.texte.append(f"faisant voler {other_player.name} une carte de {current_player.name}") 
+            log.texte.append("L'attaque déclenche le secret Pickpocket") 
+            log.texte.append(f"faisant voler {other_player.name} une carte de {current_player.name}") 
             steal(other_player, current_player)
             other_player.secret_voleur = False
             
         elif other_player.secret_mecanicien == True:
-            name_entry.texte.append("L'attaque déclenche le secret Agglomération") 
-            name_entry.texte.append(f"donnant 5 armure à {other_player.name}") 
+            log.texte.append("L'attaque déclenche le secret Agglomération") 
+            log.texte.append(f"donnant 5 armure à {other_player.name}") 
             armor(5, other_player)
             other_player.secret_mecanicien = False
             
         elif other_player.secret_pretre == True:
-            name_entry.texte.append("L'attaque déclenche le secret Thank You") 
-            name_entry.texte.append("et transforment la moitié des dégats en soin") 
+            log.texte.append("L'attaque déclenche le secret Thank You") 
+            log.texte.append("et transforment la moitié des dégats en soin") 
             heal(math.floor(number * current_player.boost_damage * other_player.boost_def / 2), other_player)
             other_player.secret_pretre = False
             can_attack = False
@@ -774,14 +800,14 @@ def damage(number, current_player, other_player):
             degat = int(math.floor(number * current_player.boost_damage * other_player.boost_def))
             
             if other_player.secret_neutre2 == True:
-                name_entry.texte.append("L'attaque déclenche le secret Parade") 
-                name_entry.texte.append(f"renvoyant la moitié des dégats subis à {current_player.name}") 
+                log.texte.append("L'attaque déclenche le secret Parade") 
+                log.texte.append(f"renvoyant la moitié des dégats subis à {current_player.name}") 
                 damage(math.floor(degat/2), other_player, current_player)
                 other_player.secret_neutre2 = False
                 
             elif other_player.secret_guerrier == True:
-                name_entry.texte.append("L'attaque déclenche le secret Contre") 
-                name_entry.texte.append(f"renvoyant les dégats subis sur {current_player.name}") 
+                log.texte.append("L'attaque déclenche le secret Contre") 
+                log.texte.append(f"renvoyant les dégats subis sur {current_player.name}") 
                 damage(math.floor(degat), other_player, current_player)
                 other_player.secret_guerrier = False
                 
@@ -800,11 +826,9 @@ def damage(number, current_player, other_player):
             else:
                 other_player.hp -= degat
             other_player.damage_taken += degat
-            if other_player.hp < 0:
-                name_entry.texte.append(f"{other_player.name} n'a plus de pv !") 
-            else:
-                name_entry.texte.append(f"{other_player.name} perd {degat} pv ! Il lui reste {other_player.hp} pv")
-                name_entry.texte.append(f"et {other_player.armor} armure")     
+            if other_player.hp > 0:
+                log.texte.append(f"{other_player.name} perd {degat} pv ! Il lui reste {other_player.hp} pv")
+                log.texte.append(f"et {other_player.armor} armure")     
                     
 def heal(number, player):
     heal = number * player.boost_heal
@@ -814,141 +838,144 @@ def heal(number, player):
     player.hp_healed += heal
     if player.hp > 20:
         player.hp = 20
-        name_entry.texte.append(f"{player.name} récupere {heal} hp") 
-        name_entry.texte.append(f"Il en a maintenant {player.hp}") 
+    log.texte.append(f"{player.name} récupere {heal} hp") 
+    log.texte.append(f"Il en a maintenant {player.hp}") 
     
 def armor(number, player):
     player.armor += number
-    name_entry.texte.append(f"{player.name} gagne {number} point d'armure") 
-    name_entry.texte.append(f"Il en a maintenant {player.armor}") 
+    log.texte.append(f"{player.name} gagne {number} point d'armure") 
+    log.texte.append(f"Il en a maintenant {player.armor}") 
                                   
 def discard(number, player):
     longueur = len(player.hand)-1
     for i in range(number):
         rand = random.randint(0,longueur)
-        name_entry.texte.append(f"La carte {data['nom'][player.hand.pop(rand)]}") 
-        name_entry.texte.append(f"à été défaussé de la main de {player.name}") 
+        log.texte.append(f"La carte {data['nom'][player.hand.pop(rand)]}") 
+        log.texte.append(f"à été défaussé de la main de {player.name}") 
         longueur -= 1
                       
 def block(other_player):
     other_player.blocked = True
-    name_entry.texte.append(f"Les soins et gains d'armures seront bloqués") 
-    name_entry.texte.append(f"pendant le tour de {other_player.name}") 
+    log.texte.append(f"Les soins et gains d'armures seront bloqués") 
+    log.texte.append(f"pendant le tour de {other_player.name}") 
 
 def boost_damage(player):
     player.boost_damage = 2
-    name_entry.texte.append(f"Les prochains dégâts de {player.name}") 
-    name_entry.texte.append(f"seront multipliés par 2") 
+    log.texte.append(f"Les prochains dégâts de {player.name}") 
+    log.texte.append(f"seront multipliés par 2") 
                                    
                                                 
 def boost_heal(player):
     player.boost_heal = 2
-    name_entry.texte.append(f"Les prochains soins de {player.name}") 
-    name_entry.texte.append(f"seront multipliés par 2") 
+    log.texte.append(f"Les prochains soins de {player.name}") 
+    log.texte.append(f"seront multipliés par 2") 
     
 def div_hp(player):
-    player.hp /= 2
-    name_entry.texte.append(f"La vie de {player.name} à été divisé par deux,")
-    name_entry.texte.append(f"il lui reste {player.hp} hp !")
+    player.hp = math.floor(player.hp/2)
+    log.texte.append(f"La vie de {player.name} à été divisé par deux,")
+    log.texte.append(f"il lui reste {player.hp} hp !")
           
 def mult_hp(player):
-    player.hp *= 2
-    name_entry.texte.append(f"La vie de {player.name} à été multiplié par deux,")
-    name_entry.texte.append(f"il lui reste {player.hp} hp !")
+    if player.hp >= 10:
+        player.hp = 20
+    else:
+        player.hp *= 2
+    log.texte.append(f"La vie de {player.name} à été multiplié par deux,")
+    log.texte.append(f"il lui reste {player.hp} hp !")
                                      
 def stamina(player):
     if player.stamina == 10:
-        name_entry.texte.append(f"{player.name} a déja 10 d'endurance,")
-        name_entry.texte.append(f"il pioche une carte.")
+        log.texte.append(f"{player.name} a déja 10 d'endurance,")
+        log.texte.append(f"il pioche une carte.")
         draw(1, player)
     else:
         player.stamina += 1
-        name_entry.texte.append(f"{player.name} gagne 1 d'endurance, il en a {player.stamina}")
+        log.texte.append(f"{player.name} gagne 1 d'endurance, il en a {player.stamina}")
         
 def duplicate(player):
     longueur = len(player.hand)-1
     player.hand.append(player.hand[random.randint(0,longueur)])
-    name_entry.texte.append(f"La carte {data['nom'][player.hand[random.randint(0,longueur)]]}") 
-    name_entry.texte.append(f"à été dupliqué dans la main de {player.name}")                  
+    log.texte.append(f"La carte {data['nom'][player.hand[random.randint(0,longueur)]]}") 
+    log.texte.append(f"à été dupliqué dans la main de {player.name}")                  
                      
 def refill(player):
     player.current_stamina += 9  
-    name_entry.texte.append(f"L'entiere de l'endurance")                                        
-    name_entry.texte.append(f"de {player.name} à été restitué")
+    log.texte.append(f"L'entiere de l'endurance")                                        
+    log.texte.append(f"de {player.name} à été restitué")
                                             
 def boost_def(player):
     player.boost_def = 0.5
-    name_entry.texte.append(f"Les prochains dégats subis")
-    name_entry.texte.append(f"par {player.name} seront divisé par 2")
+    log.texte.append(f"Les prochains dégats subis")
+    log.texte.append(f"par {player.name} seront divisé par 2")
 
 def esquive(player):
     player.esquive = 1
-    name_entry.texte.append(f"{player.name} esquivera les prochains dégats")
+    log.texte.append(f"{player.name} esquivera les prochains dégats")
 
 def stamina_destroy(player):
     player.stamina -= 1
-    name_entry.texte.append(f"{player.name} a perdu un d'endurance,")
-    name_entry.texte.append(f"il lui en reste {player.stamina}")
+    log.texte.append(f"{player.name} a perdu un d'endurance,")
+    log.texte.append(f"il lui en reste {player.stamina}")
                                                                                
 def stamina_increase(player):
     player.stamina_increase += 2
-    name_entry.texte.append(f"Le coût en endurance des cartes")
-    name_entry.texte.append(f"de {player.name} est augmentée de 2")
+    log.texte.append(f"Le coût en endurance des cartes")
+    log.texte.append(f"de {player.name} est augmentée de 2")
                                                              
 def boost_armor(player):
     player.armor *= 2
-    name_entry.texte.append(f"L'armure de {player.name} à été multiplié")
-    name_entry.texte.append(f"par 2, il en a {player.armor}")
+    log.texte.append(f"L'armure de {player.name} à été multiplié")
+    log.texte.append(f"par 2, il en a {player.armor}")
 
 def temp_stamina(player):
     player.current_stamina += 1
-    name_entry.texte.append(f"Le boost donne à {player.name} 1")
-    name_entry.texte.append(f"d'endurance pendant ce tour")
+    log.texte.append(f"Le boost donne à {player.name} 1")
+    log.texte.append(f"d'endurance pendant ce tour")
 
 def steal(current_player, other_player):
     rand = random.randint(0, len(other_player.hand)-1)
     card = other_player.hand.pop(rand)
     current_player.hand.append(card)
-    name_entry.texte.append(f"{current_player.name} vole la carte")
-    name_entry.texte.append(f"{data['nom'][card]} à {other_player.name}")
+    log.texte.append(f"{current_player.name} vole la carte")
+    log.texte.append(f"{data['nom'][card]} à {other_player.name}")
     
 def secret_neutre1(player):
     player.secret_neutre1 = True
-    name_entry.texte.append(f"{player.name} active un secret")
+    log.texte.append(f"{player.name} active un secret")
     
 def secret_neutre2(player):
     player.secret_neutre2 = True
-    name_entry.texte.append(f"{player.name} active un secret")
+    log.texte.append(f"{player.name} active un secret")
     
 def secret_neutre3(player):
     player.secret_neutre3 = True
-    name_entry.texte.append(f"{player.name} active un secret")
+    log.texte.append(f"{player.name} active un secret")
     
 def secret_mage(player):
     player.secret_mage = True
-    name_entry.texte.append(f"{player.name} active un secret")
+    log.texte.append(f"{player.name} active un secret")
     
 def secret_guerrier(player):
     player.secret_guerrier = True
-    name_entry.texte.append(f"{player.name} active un secret")
+    log.texte.append(f"{player.name} active un secret")
     
 def secret_voleur(player):
     player.secret_voleur = True
-    name_entry.texte.append(f"{player.name} active un secret")
+    log.texte.append(f"{player.name} active un secret")
     
 def secret_mecanicien(player):
     player.secret_mecanicien = True
-    name_entry.texte.append(f"{player.name} active un secret")
+    log.texte.append(f"{player.name} active un secret")
     
 def secret_pretre(player):
     player.secret_pretre = True
-    name_entry.texte.append(f"{player.name} active un secret")
+    log.texte.append(f"{player.name} active un secret")
 
     
 def game(player_1, player_2):
     global tour, first, second
     player = [player_1, player_2]
-    rand = 1
+    rand = random.randint(0,1)
     first = player[rand]
     second = player[not(rand)]
     second.hand.append(50)
@@ -989,14 +1016,14 @@ def play(carte, current_player, other_player):
         if "Secret" in data['effet'][carte]:
             pass
         else:
-            name_entry.texte.append(f''' -> {current_player.name} utilise la carte "{data['nom'][carte]}" :''')
-        current_player.hand.pop(current_player.hand.index(carte))
+            log.texte.append(f''' -> {current_player.name} utilise la carte "{data['nom'][carte]}" :''')
         for i in range (data['nmb_effet'][carte]):
             if current_player.blocked == True and ( data[f'effet_{i}'][carte] == "heal" or data[f'effet_{i}'][carte] == "armor"):
-                name_entry.texte.append(f"{current_player} ne peut pas utiliser")
-                name_entry.texte.append(f"de heal ou d'armure pendant")
-                name_entry.texte.append(f"ce tour")
+                log.texte.append(f"{current_player.name} ne peut pas utiliser")
+                log.texte.append(f"de heal ou d'armure pendant")
+                log.texte.append(f"ce tour")
                 continue
+        current_player.hand.pop(current_player.hand.index(carte))
         for j in range (data['nmb_effet'][carte]):
             effect(data[f'effet_{j}'][carte],data[f'valeur_effet_{j}'][carte], current_player, other_player)
         current_player.current_stamina -= int(data["cout"][carte]) + current_player.stamina_increase
@@ -1013,7 +1040,7 @@ def play(carte, current_player, other_player):
 #                                      | |    
 #                                      |_|    
 
-name_entry = TextBox(rect=(0,0,400,400))
+log = TextBox(rect=(0,0,400,400))
 
 run = True
 while run:
@@ -1106,7 +1133,10 @@ while run:
                     if 450 <= mouse_y <= 600:
                         if 1100 <= mouse_x <= 1260:
                             end_turn(player_1, player_2)
-                    
+
+            if current_background == end_back and changed == True:
+                if 520 <= mouse_x <= 760 and 340 <= mouse_y <= 380:
+                    current_background = menu_back
 
 
             if current_background == choose_deck_back and changed == True:
@@ -1136,6 +1166,7 @@ while run:
                                         player_1.hand = player_1.create_hand(player_1.deck)
                                         game(player_1, player_2)
                                         current_background = play_back
+                                        log.texte = []
                                         changed = False
                 if 585 <= mouse_y <= 620:
                     for i in range(1, second_line):
@@ -1150,6 +1181,7 @@ while run:
                                         player_1.hand = player_1.create_hand(player_1.deck)
                                         game(player_1, player_2)
                                         current_background = play_back
+                                        log.texte = []
                                         changed = False
 
             if current_background == editor_hero_back and changed == True:
@@ -1249,6 +1281,12 @@ while run:
                 if 10 <= mouse_x <= 70 and 650 <= mouse_y <= 710:
                     current_background = editor_hero_back
                     changed = False
+
+        if current_background == play_back:
+            if player_1.hp <= 0 or player_2.hp <= 0:
+                current_background = end_back
+                changed= False
+                tour = 1
                 
                         
     redrawGameWindow(current_background)
