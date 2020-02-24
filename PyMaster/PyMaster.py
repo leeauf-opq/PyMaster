@@ -69,6 +69,7 @@ editor_back = pygame.image.load('image/fond.jpg').convert_alpha()
 choose_deck_back = pygame.image.load('image/fond.jpg').convert_alpha()
 deck_viewer_back = pygame.image.load('image/fond.jpg').convert_alpha()
 end_back = pygame.image.load('image/fond.jpg').convert_alpha()
+tuto_back = pygame.image.load('image/fond.jpg').convert_alpha()
 current_background = menu_back
 vol_general = 0,5
 
@@ -99,6 +100,9 @@ editor = pygame.image.load('image/editor.png').convert_alpha()
 cadre = pygame.image.load('image/cadre.png').convert_alpha()
 end_turn_0 = pygame.image.load('image/end_turn_0.png').convert_alpha()
 end_turn_1 = pygame.image.load('image/end_turn_1.png').convert_alpha()
+aide_0 = pygame.image.load('image/aide_0.png').convert_alpha()
+aide_1 = pygame.image.load('image/aide_1.png').convert_alpha()
+tuto = pygame.image.load('image/tuto.png').convert_alpha()
 
 #  _   _                          
 # | | | |                         
@@ -287,6 +291,9 @@ def redrawGameWindow(background):
 
     if background == end_back:
         End_Background()
+
+    if background == tuto_back:
+        Tuto_Background()
     
     pygame.display.update()
 
@@ -297,7 +304,10 @@ def Menu_Background():
     win.blit(exit_0, ((width-400)/2,550))
     win.blit(editor, (20,10))
     win.blit(font.render("EDITOR",3,(0,0,0)), (150,60))
+    win.blit(aide_0, (1150, 10))
     mouse_x, mouse_y = pygame.mouse.get_pos()
+    if 1150 <= mouse_x <= 1250 and 20 <= mouse_y <= 105:
+        win.blit(aide_1, (1150, 10))
     if 440 <= mouse_x <= 840:
         if 250 <= mouse_y <= 370:
             win.blit(play_1, ((width-400)/2,250))
@@ -358,7 +368,7 @@ def Choose_Background():
             win.blit(voleur_1, (310,390))
         if 730 <= mouse_x <= 950:
             win.blit(mage_1, (710,390))
-           
+        
     if 10 <= mouse_x <= 70 and 650 <= mouse_y <= 710:
         win.blit(fleche_retour_1, (10,650))
 
@@ -458,6 +468,10 @@ def Editor_Background():
     mouse_x, mouse_y = pygame.mouse.get_pos()
     win.blit(pygame.image.load("image/recherche.png").convert_alpha(), (800, 20))
     win.blit(pygame.image.load("image/ok.png").convert_alpha(), (1100, 660))
+    text = font.render("Supprimer", True, (255,255,255), (0,0,0)) 
+    textRect = text.get_rect()
+    textRect.center = (950, 680)
+    win.blit(text, textRect)
     if 1200 < mouse_x < 1260 and 650 < mouse_y < 700:
         win.blit(pygame.image.load("image/fleche_retour_1.png").convert_alpha(), (1200, 650))
     else:
@@ -565,7 +579,15 @@ def Editor_Background():
 
                     
             if 1200 <= mouse_x <= 1260 and 650 <= mouse_y <= 700:
-                    current_background = deck_viewer_back
+                current_background = deck_viewer_back
+                    
+
+            if 860 <= mouse_x <= 1030 and 660 <= mouse_y <= 700 and deck_edited > 0:
+                data_deck.delete_rows(idx=deck_edited+2)
+                book.save('deck.xlsx')
+                ReloadBDD()
+                current_background = deck_viewer_back
+
     if len(created_deck) == 30:
         win.blit(font.render("Deck complet !",3,(255,255,255)), (870,600))
                         
@@ -655,6 +677,14 @@ def End_Background():
     retourRect = retour.get_rect()
     retourRect.center = (width/2, height/2)
     win.blit(retour, retourRect)
+
+def Tuto_Background():
+    win.blit(tuto, (200,100))
+    win.blit(fleche_retour_0, (10,650))    
+    mouse_x, mouse_y = pygame.mouse.get_pos()
+    if 10 <= mouse_x <= 70 and 650 <= mouse_y <= 710:
+        win.blit(fleche_retour_1, (10,650))
+
                             
 #  _____                                            _                 _          
 # |  __ \                                          | |               (_)         
@@ -1069,6 +1099,9 @@ while run:
                     current_background = editor_hero_back
                     changed = False
 
+                if 1150 <= mouse_x <= 1250 and 20 <= mouse_y <= 105:
+                    current_background = tuto_back
+
 
             if current_background == choose_back and changed == True:
                 if 150 <= mouse_y <= 450:          
@@ -1281,6 +1314,10 @@ while run:
                 if 10 <= mouse_x <= 70 and 650 <= mouse_y <= 710:
                     current_background = editor_hero_back
                     changed = False
+
+            if current_background == tuto_back:
+                if 10 <= mouse_x <= 70 and 650 <= mouse_y <= 710:
+                    current_background = menu_back
 
         if current_background == play_back:
             if player_1.hp <= 0 or player_2.hp <= 0:
