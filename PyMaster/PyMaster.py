@@ -29,9 +29,9 @@ musique = pygame.mixer.music.load("musique.wav")
 pygame.mixer.music.set_volume(0.5)
 pygame.mixer.music.play(-1)
 clock = pygame.time.Clock()
-font = pygame.font.Font(None, 48)
-petite_font = pygame.font.Font(None, 30)
-big_font = pygame.font.Font(None, 76)
+font = pygame.font.Font("upheavtt.ttf", 35)
+petite_font = pygame.font.Font("upheavtt.ttf", 20)
+big_font = pygame.font.Font("upheavtt.ttf", 76)
 
 def ReloadBDD():
     global deck_ex, book, data_deck
@@ -50,6 +50,8 @@ def ReloadBDD():
 x_0 = (width/2)-8
 x_1 = (width/2)-8
 tour = 1
+changed = False
+code = ""
 
 # ______            _                                   _ 
 # | ___ \          | |                                 | |
@@ -87,6 +89,8 @@ play_0 = pygame.image.load('image/play_0.jpg').convert_alpha()
 play_1 = pygame.image.load('image/play_1.jpg').convert_alpha()
 option_0 = pygame.image.load('image/option_0.jpg').convert_alpha()
 option_1 = pygame.image.load('image/option_1.jpg').convert_alpha()
+editeur_0 = pygame.image.load('image/editor_0.jpg').convert_alpha()
+editeur_1 = pygame.image.load('image/editor_1.jpg').convert_alpha()
 retour_0 = pygame.image.load('image/retour_0.jpg').convert_alpha()
 retour_1 = pygame.image.load('image/retour_1.jpg').convert_alpha()
 exit_0 = pygame.image.load('image/exit_0.jpg').convert_alpha()
@@ -96,13 +100,13 @@ fleche_retour_1 = pygame.image.load('image/fleche_retour_1.png').convert_alpha()
 volume = pygame.image.load('image/volume.png').convert_alpha()
 barre = pygame.image.load('image/barre.png').convert_alpha()
 secret = pygame.image.load('image/secret.png').convert_alpha()
-editor = pygame.image.load('image/editor.png').convert_alpha()
 cadre = pygame.image.load('image/cadre.png').convert_alpha()
 end_turn_0 = pygame.image.load('image/end_turn_0.png').convert_alpha()
 end_turn_1 = pygame.image.load('image/end_turn_1.png').convert_alpha()
 aide_0 = pygame.image.load('image/aide_0.png').convert_alpha()
 aide_1 = pygame.image.load('image/aide_1.png').convert_alpha()
 tuto = pygame.image.load('image/tuto.png').convert_alpha()
+parchemin = pygame.image.load('image/parchemin.png').convert_alpha()
 
 #  _   _                          
 # | | | |                         
@@ -145,12 +149,14 @@ class Hero:
         self.current_stamina = self.stamina
         self.blocked = False
         self.boost_damage = 1
+        self.heroic_boost_damage = 0
         self.boost_heal = 1
         self.boost_def = 1
         self.damage_taken = 0
         self.esquive = 0
         self.stamina_increase = 0
         self.hp_healed = 0
+        self.power_used = False
         self.secret_neutre1 = False
         self.secret_neutre2 = False
         self.secret_neutre3 = False
@@ -168,6 +174,10 @@ class Hero:
             self.deck = []
             self.hand = []
             self.image = mage
+            self.class_power_small = pygame.image.load('sprite/pouvoir_mage.png').convert_alpha()
+            self.class_power_big = pygame.image.load('sprite/pouvoir_mage1.png').convert_alpha()
+            self.class_power_small_off = pygame.image.load('sprite/pouvoir_mage_off.png').convert_alpha()
+            self.class_power_big_off = pygame.image.load('sprite/pouvoir_mage1_off.png').convert_alpha()
 
         if classe == "guerrier":
             self.hp = 15
@@ -176,6 +186,10 @@ class Hero:
             self.deck = []
             self.hand = []
             self.image = guerrier
+            self.class_power_small = pygame.image.load('sprite/pouvoir_guerrier.png').convert_alpha()
+            self.class_power_big = pygame.image.load('sprite/pouvoir_guerrier1.png').convert_alpha()
+            self.class_power_small_off = pygame.image.load('sprite/pouvoir_guerrier_off.png').convert_alpha()
+            self.class_power_big_off = pygame.image.load('sprite/pouvoir_guerrier1_off.png').convert_alpha()
 
         if classe == "voleur":
             self.hp = 15
@@ -184,6 +198,10 @@ class Hero:
             self.deck = []
             self.hand = []
             self.image = voleur
+            self.class_power_small = pygame.image.load('sprite/pouvoir_voleur.png').convert_alpha()
+            self.class_power_big = pygame.image.load('sprite/pouvoir_voleur1.png').convert_alpha()
+            self.class_power_small_off = pygame.image.load('sprite/pouvoir_voleur_off.png').convert_alpha()
+            self.class_power_big_off = pygame.image.load('sprite/pouvoir_voleur1_off.png').convert_alpha()
 
         if classe == "mecanicien":
             self.hp = 10
@@ -192,6 +210,10 @@ class Hero:
             self.deck = []
             self.hand = []
             self.image = mecanicien
+            self.class_power_small = pygame.image.load('sprite/pouvoir_mecanicien.png').convert_alpha()
+            self.class_power_big = pygame.image.load('sprite/pouvoir_mecanicien1.png').convert_alpha()
+            self.class_power_small_off = pygame.image.load('sprite/pouvoir_mecanicien_off.png').convert_alpha()
+            self.class_power_big_off = pygame.image.load('sprite/pouvoir_mecanicien1_off.png').convert_alpha()
 
         if classe == "pretre":
             self.hp = 15
@@ -200,6 +222,10 @@ class Hero:
             self.deck = []
             self.hand = []
             self.image = pretre
+            self.class_power_small = pygame.image.load('sprite/pouvoir_pretre.png').convert_alpha()
+            self.class_power_big = pygame.image.load('sprite/pouvoir_pretre1.png').convert_alpha()
+            self.class_power_small_off = pygame.image.load('sprite/pouvoir_pretre_off.png').convert_alpha()
+            self.class_power_big_off = pygame.image.load('sprite/pouvoir_pretre1_off.png').convert_alpha()
 
     def create_deck(self, class_number):
         deck = []
@@ -244,7 +270,7 @@ class TextBox(object):
         defaults = {
                     "color" : pygame.Color("black"),
                     "font_color" : pygame.Color("white"),
-                    "font" : pygame.font.Font(None, 25),
+                    "font" : pygame.font.Font("upheavtt.ttf", 15),
                     }
         for kwarg in kwargs:
             if kwarg in defaults:
@@ -299,25 +325,28 @@ def redrawGameWindow(background):
 
 def Menu_Background():
     win.blit(logo, ((width-350)/2,20))
-    win.blit(play_0, ((width-400)/2,250))
-    win.blit(option_0, ((width-400)/2,400))
-    win.blit(exit_0, ((width-400)/2,550))
-    win.blit(editor, (20,10))
-    win.blit(font.render("EDITOR",3,(0,0,0)), (150,60))
+    win.blit(play_0, ((width-400)/4,300))
+    win.blit(editeur_0, ((width-400)*(3/4),300))
+    win.blit(option_0, ((width-400)/4,500))
+    win.blit(exit_0, ((width-400)*(3/4),500))
     win.blit(aide_0, (1150, 10))
     mouse_x, mouse_y = pygame.mouse.get_pos()
+
     if 1150 <= mouse_x <= 1250 and 20 <= mouse_y <= 105:
         win.blit(aide_1, (1150, 10))
-    if 440 <= mouse_x <= 840:
-        if 250 <= mouse_y <= 370:
-            win.blit(play_1, ((width-400)/2,250))
-        if 400 <= mouse_y <= 520:
-            win.blit(option_1, ((width-400)/2,400))
-        if 550 <= mouse_y <= 670:
-            win.blit(exit_1, ((width-400)/2,550))
-    if 10 <= mouse_x <= 110 and 10 <= mouse_y <= 110:
-        win.blit(font.render("EDITOR",3,(255,255,255)), (150,60))
-        
+    
+    if 300 <= mouse_y <= 420:
+        if 220 <= mouse_x <= 620:
+            win.blit(play_1, ((width-400)/4,300))
+        if 660 <= mouse_x <= 1060:
+            win.blit(editeur_1, ((width-400)*(3/4),300))
+            
+    if 500 <= mouse_y <= 620:
+        if 220 <= mouse_x <= 620:
+            win.blit(option_1, ((width-400)/4,500))
+        if 660 <= mouse_x <= 1060:
+            win.blit(exit_1, ((width-400)*(3/4),500))
+            
 
 def Option_Background():
     global x_0, x_1
@@ -402,31 +431,35 @@ def Play_Background():
     win.blit(end_turn_0, (1110,450))
     win.blit(player_1.image, (10,440))
     win.blit(player_2.image, (1030, 10))
+    if player_1.power_used == False:
+        win.blit(player_1.class_power_small, (280,450))
+    else:
+        win.blit(player_1.class_power_small_off, (280,450))
     if player_1.hp < 10:
         win.blit(font.render(str(player_1.hp),3,(255,255,255)), (35,650))
     else:
-        win.blit(font.render(str(player_1.hp),3,(255,255,255)), (25,650))
+        win.blit(font.render(str(player_1.hp),3,(255,255,255)), (30,650))
     if player_1.armor < 10:
-        win.blit(font.render(str(player_1.armor),3,(0,0,0)), (212,635))
+        win.blit(font.render(str(player_1.armor),3,(0,0,0)), (210,637))
     else:
         win.blit(font.render(str(player_1.armor),3,(0,0,0)), (205,635))
     if player_1.current_stamina < 10:
-        win.blit(font.render(str(player_1.current_stamina),3,(255,255,255)), (125,455))
+        win.blit(font.render(str(player_1.current_stamina),3,(255,255,255)), (127,453))
     else:
-        win.blit(font.render(str(player_1.current_stamina),3,(255,255,255)), (115,455))
+        win.blit(font.render(str(player_1.current_stamina),3,(255,255,255)), (117,453))
 
     if player_2.hp < 10:
         win.blit(font.render(str(player_2.hp),3,(255,255,255)), (1050,220))
     else:
-        win.blit(font.render(str(player_2.hp),3,(255,255,255)), (1040,220))
+        win.blit(font.render(str(player_2.hp),3,(255,255,255)), (1053,220))
     if player_2.armor < 10:
-        win.blit(font.render(str(player_2.armor),3,(0,0,0)), (1230,210))
+        win.blit(font.render(str(player_2.armor),3,(0,0,0)), (1229,210))
     else:
         win.blit(font.render(str(player_2.armor),3,(0,0,0)), (1223,210))
     if player_2.current_stamina < 10:
-        win.blit(font.render(str(player_2.current_stamina),3,(255,255,255)), (1145,25))
+        win.blit(font.render(str(player_2.current_stamina),3,(255,255,255)), (1147,24))
     else:
-        win.blit(font.render(str(player_2.current_stamina),3,(255,255,255)), (1135,25))
+        win.blit(font.render(str(player_2.current_stamina),3,(255,255,255)), (1137,24))
     if (
         player_1.secret_neutre1 == True
         or player_1.secret_neutre2 == True
@@ -453,25 +486,42 @@ def Play_Background():
     i = 1
     j = 1
     mouse_x, mouse_y = pygame.mouse.get_pos()
-    for card in player_1.hand:
-        win.blit(pygame.image.load(data["petit_sprite"][card]).convert_alpha(), (100*i+180, 600))
+    card_blit = -1
+    for i, card in enumerate(player_1.hand):
+        win.blit(pygame.image.load(data["petit_sprite"][card]).convert_alpha(), (100*i+280, 600))
         if 600 <= mouse_y <= 800:
-            if 100*i+180 <= mouse_x <= (100*i+180)+100:
-                win.blit(pygame.image.load(data["grand_sprite"][card]).convert_alpha(), (100*i+180-75, 420))
-        i += 1
-    for card in player_2.hand:
-        win.blit(pygame.image.load("image/carte_ennemi.png").convert_alpha(), ((width-280)-60*j, 0))
-        j += 1
+            if 100*i+280 <= mouse_x <= (100*i+280)+100:
+                card_blit = card
+                pos_card = i
+    if card_blit >= 0:
+        if pos_card == 9:
+            win.blit(pygame.image.load(data["grand_sprite"][card_blit]).convert_alpha(), (100*pos_card+280-120, 420))
+        else: 
+            win.blit(pygame.image.load(data["grand_sprite"][card_blit]).convert_alpha(), (100*pos_card+280-75, 420))
+                
+    for j, card in enumerate(player_2.hand):
+        win.blit(pygame.image.load("image/carte_ennemi.png").convert_alpha(), ((width-330)-60*j, 0))
+
+    if 280 < mouse_x < 370 and 460 < mouse_y < 580:
+        if player_1.power_used == False:
+            win.blit(player_1.class_power_big, (205,347))
+        else:
+            win.blit(player_1.class_power_big_off, (205,347))
 
 def Editor_Background():
-    global nom_deck, created_deck, current_background, deck_edited
+    global nom_deck, created_deck, current_background, deck_edited, code
     mouse_x, mouse_y = pygame.mouse.get_pos()
-    win.blit(pygame.image.load("image/recherche.png").convert_alpha(), (800, 20))
+    win.blit(pygame.image.load("image/recherche.png").convert_alpha(), (740, 10))
     win.blit(pygame.image.load("image/ok.png").convert_alpha(), (1100, 660))
+    win.blit(parchemin, (740, 110))
     text = font.render("Supprimer", True, (255,255,255), (0,0,0)) 
     textRect = text.get_rect()
     textRect.center = (950, 680)
     win.blit(text, textRect)
+
+    if "27327327427427627527627598113" in code:
+        win.blit(pygame.image.load(data["petit_sprite"][51]).convert_alpha(), (420,440))
+            
     if 1200 < mouse_x < 1260 and 650 < mouse_y < 700:
         win.blit(pygame.image.load("image/fleche_retour_1.png").convert_alpha(), (1200, 650))
     else:
@@ -504,30 +554,36 @@ def Editor_Background():
                 win.blit(pygame.image.load(data["grand_sprite"][hero_editor.class_number+i]).convert_alpha(), (i*100-60,390))
             elif i*100+20 <= mouse_x <= i*100+120:
                 win.blit(pygame.image.load(data["grand_sprite"][hero_editor.class_number+i]).convert_alpha(), (i*100,390))
+
+    if "27327327427427627527627598113" in code:
+        if 420 < mouse_x < 420+136 and 440 < mouse_y < 560:
+            win.blit(pygame.image.load(data["grand_sprite"][51]).convert_alpha(), (420-80,340))
     
     for i in created_deck:
         if i < 15:
             if created_deck.count(i) == 1:
-                win.blit(petite_font.render(data["nom"][i],1,(255,255,255)), (750,i*30+120))
+                win.blit(petite_font.render(data["nom"][i],1,(0,0,0)), (770,i*30+130))
             else:
-                win.blit(petite_font.render(data["nom"][i],1,(255,0,0)), (750,i*30+120))
-        elif i < 30:
+                win.blit(petite_font.render(data["nom"][i],1,(255,0,0)), (770,i*30+130))
+        elif i < 30 <= 50:
             if created_deck.count(i) == 1:
-                win.blit(petite_font.render(data["nom"][i],1,(255,255,255)), (1000,(i-15)*30+120))
+                win.blit(petite_font.render(data["nom"][i],1,(0,0,0)), (960,(i-15)*30+130))
             else:
-                win.blit(petite_font.render(data["nom"][i],1,(255,0,0)), (1000,(i-15)*30+120))
+                win.blit(petite_font.render(data["nom"][i],1,(255,0,0)), (960,(i-15)*30+130))
+        elif i == 51:
+            win.blit(petite_font.render(data["nom"][i],1,(random.randint(0,255),random.randint(0,255),random.randint(0,255))), (900,570))
         else:
             if created_deck.count(i) == 1:
-                win.blit(petite_font.render(data["nom"][i],1,(255,0,255)), (1000,(i-hero_editor.class_number+10)*30+120))
+                win.blit(petite_font.render(data["nom"][i],1,(0,0,255)), (960,(i-hero_editor.class_number+10)*30+130))
             else:
-                win.blit(petite_font.render(data["nom"][i],1,(255,255,0)), (1000,(i-hero_editor.class_number+10)*30+120))
-                            
+                win.blit(petite_font.render(data["nom"][i],1,(255,0,255)), (960,(i-hero_editor.class_number+10)*30+130))
+              
                 
     for event in pygame.event.get():
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_BACKSPACE:
                 nom_deck = nom_deck[:-1]
-            elif len(nom_deck) <= 15:
+            elif len(nom_deck) <= 12:
                 nom_deck += event.unicode 
     
 
@@ -549,20 +605,30 @@ def Editor_Background():
                                 created_deck.append(hero_editor.class_number+i)
 
             for i in range(15):
-                if 750 <= mouse_x <= 950:
+                if 770 <= mouse_x <= 940:
                     if i*30+120 <= mouse_y <= i*30+140:
                         if i in created_deck:
                             created_deck.pop(created_deck.index(i))
-                if 1000 <= mouse_x <= 1200:
+                if 960 <= mouse_x <= 1180:
                     if i*30+120 <= mouse_y <= i*30+140 and i < 10:
                         if i+15 in created_deck:
                             created_deck.pop(created_deck.index(i+15))
                     elif i*30+120 <= mouse_y <= i*30+140:
                         if hero_editor.class_number+i-10 in created_deck:
                             created_deck.pop(created_deck.index(hero_editor.class_number+i-10))
+                            
+            if "273" in code:
+                if 420 < mouse_x < 420+136 and 440 < mouse_y < 540 and len(created_deck) < 30 and created_deck.count(51) == 0:
+                    created_deck.append(51)
+                if 900 < mouse_x < 990 and 575 < mouse_y < 585 and 51 in created_deck:
+                    created_deck.pop(created_deck.index(51))
+    
 
-            if 1100 <= mouse_x <= 1169 and 670 <= mouse_y <= 711:
+
+            if 1100 <= mouse_x <= 1170 and 670 <= mouse_y <= 710:
                 if len(created_deck) == 30:
+                    if nom_deck == "":
+                        nom_deck = f"{hero_editor.classe} new"
                     created_deck.insert(0,nom_deck)
                     created_deck.insert(0,hero_editor.classe)
                     if deck_edited < 0:
@@ -580,6 +646,7 @@ def Editor_Background():
                     
             if 1200 <= mouse_x <= 1260 and 650 <= mouse_y <= 700:
                 current_background = deck_viewer_back
+                code = ""
                     
 
             if 860 <= mouse_x <= 1030 and 660 <= mouse_y <= 700 and deck_edited > 0:
@@ -589,9 +656,23 @@ def Editor_Background():
                 current_background = deck_viewer_back
 
     if len(created_deck) == 30:
-        win.blit(font.render("Deck complet !",3,(255,255,255)), (870,600))
-                        
-    win.blit(font.render(nom_deck,2,(0,0,0)), (910,48))
+        win.blit(font.render("Deck complet !",3,(255,255,255)), (700,620))
+    else:
+        win.blit(font.render(f"Nombres de cartes : {len(created_deck)}",3,(255,255,255)), (540,620))
+        
+    if len(created_deck) == 0:
+        win.blit(font.render(f"Coût moyen : 0",3,(255,255,255)), (980,620))
+    else:
+        moyen, somme = 0, 0
+        try:
+            for i in created_deck:
+                    somme += int(data["cout"][i])
+            moyen = round(somme/len(created_deck), 1)
+            win.blit(font.render(f"Coût moyen : {moyen}",3,(255,255,255)), (980,620))
+        except:
+            pass
+    
+    win.blit(font.render(nom_deck,2,(0,0,0)), (850,38))
 
 
 def Choose_Deck_Background():
@@ -627,6 +708,7 @@ def Choose_Deck_Background():
 
 
 def Deck_Viewer_Background():
+    global code
     win.blit(fleche_retour_0, (10,650))
     mouse_x, mouse_y = pygame.mouse.get_pos()        
     if 10 <= mouse_x <= 70 and 650 <= mouse_y <= 710:
@@ -660,6 +742,7 @@ def Deck_Viewer_Background():
     textRect = text.get_rect()
     textRect.center = (width/2, 600)
     win.blit(text, textRect)
+
 
 
 def End_Background():
@@ -764,6 +847,8 @@ def effect(effet, number, current_player, other_player):
         secret_mecanicien(current_player)
     if effet == "secret_pretre":
         secret_pretre(current_player)
+    if effet == "kill":
+        kill(other_player)
 
 def draw(number, player):
     if len(player.deck) >= 1:
@@ -785,7 +870,7 @@ def draw(number, player):
                           
 def damage(number, current_player, other_player):
     can_attack = True
-    if other_player.esquive == 1:
+    if random.randint(0,100)/100 <= other_player.esquive:
         log.texte.append(f"{other_player.name} esquive les dégats !") 
         other_player.esquive = 0
     else:
@@ -827,7 +912,7 @@ def damage(number, current_player, other_player):
             can_attack = False
 
         if can_attack == True:
-            degat = int(math.floor(number * current_player.boost_damage * other_player.boost_def))
+            degat = int(math.floor((number + current_player.heroic_boost_damage) * current_player.boost_damage * other_player.boost_def))
             
             if other_player.secret_neutre2 == True:
                 log.texte.append("L'attaque déclenche le secret Parade") 
@@ -968,39 +1053,73 @@ def steal(current_player, other_player):
     current_player.hand.append(card)
     log.texte.append(f"{current_player.name} vole la carte")
     log.texte.append(f"{data['nom'][card]} à {other_player.name}")
+
+def kill(player):
+    player.hp = 0
     
 def secret_neutre1(player):
-    player.secret_neutre1 = True
-    log.texte.append(f"{player.name} active un secret")
+    if player.secret_neutre1 != True:
+        player.secret_neutre1 = True
+        log.texte.append(f"{player.name} active un secret")
+    else:
+        log.texte.append("Le secret était déjà actif")
+        player.current_stamina += 3 + player.stamina_increase
     
 def secret_neutre2(player):
-    player.secret_neutre2 = True
-    log.texte.append(f"{player.name} active un secret")
+    if player.secret_neutre2 != True:
+        player.secret_neutre2 = True
+        log.texte.append(f"{player.name} active un secret")
+    else:
+        log.texte.append("Le secret était déjà actif")
+        player.current_stamina += 3 + player.stamina_increase
     
 def secret_neutre3(player):
-    player.secret_neutre3 = True
-    log.texte.append(f"{player.name} active un secret")
+    if player.secret_neutre3 != True:
+        player.secret_neutre3 = True
+        log.texte.append(f"{player.name} active un secret")
+    else:
+        log.texte.append("Le secret était déjà actif")
+        player.current_stamina += 3 + player.stamina_increase
     
 def secret_mage(player):
-    player.secret_mage = True
-    log.texte.append(f"{player.name} active un secret")
+    if player.secret_mage != True:
+        player.secret_mage = True
+        log.texte.append(f"{player.name} active un secret")
+    else:
+        log.texte.append("Le secret était déjà actif")
+        player.current_stamina += 3 + player.stamina_increase
     
 def secret_guerrier(player):
-    player.secret_guerrier = True
-    log.texte.append(f"{player.name} active un secret")
+    if player.secret_guerrier != True:
+        player.secret_guerrier = True
+        log.texte.append(f"{player.name} active un secret")
+    else:
+        log.texte.append("Le secret était déjà actif")
+        player.current_stamina += 3 + player.stamina_increase
     
 def secret_voleur(player):
-    player.secret_voleur = True
-    log.texte.append(f"{player.name} active un secret")
+    if player.secret_voleur != True:
+        player.secret_voleur = True
+        log.texte.append(f"{player.name} active un secret")
+    else:
+        log.texte.append("Le secret était déjà actif")
+        player.current_stamina += 3 + player.stamina_increase
     
 def secret_mecanicien(player):
-    player.secret_mecanicien = True
-    log.texte.append(f"{player.name} active un secret")
-    
+    if player.secret_mecanicien != True:
+        player.secret_mecanicien = True
+        log.texte.append(f"{player.name} active un secret")
+    else:
+        log.texte.append("Le secret était déjà actif")
+        player.current_stamina += 3 + player.stamina_increase
+        
 def secret_pretre(player):
-    player.secret_pretre = True
-    log.texte.append(f"{player.name} active un secret")
-
+    if player.secret_pretre != True:
+        player.secret_pretre = True
+        log.texte.append(f"{player.name} active un secret")
+    else:
+        log.texte.append("Le secret était déjà actif")
+        player.current_stamina += 3 + player.stamina_increase
     
 def game(player_1, player_2):
     global tour, first, second
@@ -1023,8 +1142,9 @@ def end_turn(current_player, other_player):
     tour += 0.5
     current_player.blocked = False
     current_player.stamina_increase = 0
+    current_player.power_used = False
+    current_player.can_play = False
     current_player, other_player = other_player, current_player
-    other_player.can_play = False
     current_player.can_play = True
     draw(1, current_player)
     if tour >= 2:
@@ -1081,23 +1201,27 @@ while run:
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
                 run = False
+            if current_background == deck_viewer_back:
+                code += str(event.key)
              
         if event.type == pygame.MOUSEBUTTONUP:
             mouse_x, mouse_y = pygame.mouse.get_pos()
 
             if current_background == menu_back and changed == True:
-                if (width-400)/2 <= mouse_x <= (width+400)/2:
-                    if 250 <= mouse_y <= 370:
+                if 300 <= mouse_y <= 420:
+                    if 220 <= mouse_x <= 620:
                         current_background = choose_back
                         changed = False
-                    if 400 <= mouse_y <= 520:
+                    if 660 <= mouse_x <= 1060:
+                        current_background = editor_hero_back
+                        changed = False
+            
+                if 500 <= mouse_y <= 620:
+                    if 220 <= mouse_x <= 620:
                         current_background = option_back
                         changed = False
-                    if 550 <= mouse_y <= 670:
-                        run = False
-                if 0 <= mouse_x <= 200 and 0 <= mouse_y <= 200:
-                    current_background = editor_hero_back
-                    changed = False
+                    if 660 <= mouse_x <= 1060:
+                        run = False                 
 
                 if 1150 <= mouse_x <= 1250 and 20 <= mouse_y <= 105:
                     current_background = tuto_back
@@ -1129,7 +1253,7 @@ while run:
                         current_background = choose_deck_back
                         changed = False
                         
-                elif 400 <= mouse_y <= 700:    
+                if 390 <= mouse_y <= 720:    
                     
                     if 330 <= mouse_x <= 550:
                         player_1 = Hero("voleur", "P1")
@@ -1159,6 +1283,21 @@ while run:
 
             if current_background == play_back and changed == True:
                 if player_1.can_play == True:
+                    if 280 < mouse_x < 370 and 460 < mouse_y < 580:
+                        if player_1.current_stamina >= 2 and player_1.power_used == False:
+                            if player_1.classe == "guerrier":
+                                player_1.heroic_boost_damage = 1
+                            elif player_1.classe == "mage":
+                                damage(1, player_1, player_2)
+                            elif player_1.classe == "voleur":
+                                player_1.esquive = 0.2
+                            elif player_1.classe == "pretre":
+                                heal(1, player_1)
+                            elif player_1.classe == "mecanicien":
+                                armor(1, player_1)
+                            player_1.current_stamina -= 2
+                            player_1.power_used = True
+
                     if 600 <= mouse_y <= 800:
                         for i in range(1, len(player_1.hand)+1):
                             if 100*i+180 <= mouse_x <= (100*i+180)+100:
