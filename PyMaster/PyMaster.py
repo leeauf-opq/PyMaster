@@ -217,7 +217,7 @@ class Hero:
             self.class_power_big_off = pygame.image.load('sprite/pouvoir_mecanicien1_off.png').convert_alpha()
 
         if classe == "pretre":
-            self.hp = 500
+            self.hp = 15
             self.armor = 0
             self.class_number = 45
             self.deck = []
