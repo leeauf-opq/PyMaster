@@ -12,6 +12,7 @@ import pandas as pd
 import time
 import math
 import openpyxl as op
+import copy
 
 
 pygame.init()
@@ -216,7 +217,7 @@ class Hero:
             self.class_power_big_off = pygame.image.load('sprite/pouvoir_mecanicien1_off.png').convert_alpha()
 
         if classe == "pretre":
-            self.hp = 15
+            self.hp = 500
             self.armor = 0
             self.class_number = 45
             self.deck = []
@@ -776,7 +777,113 @@ def Tuto_Background():
 # | |_\ \ (_| | | | | | |  __/ | | | | | |  __/ (__| | | | (_| | | | | | (__\__ \
 #  \____/\__,_|_| |_| |_|\___| |_| |_| |_|\___|\___|_| |_|\__,_|_| |_|_|\___|___/
                                                                                
-                                                                             
+def game(player_1, player_2):
+    global tour, first, second
+    player = [player_1, player_2]
+    rand = random.randint(0,1)
+    first = player[rand]
+    second = player[not(rand)]
+    second.hand.append(50)
+    first.can_play = True
+    if first == player_2:
+        bot_turn(player_2, player_1)
+
+def play(carte, current_player, other_player):
+    can_play = True
+    if current_player.current_stamina < int(data["cout"][carte]):
+        can_play = False
+    if can_play == True:
+        if "Secret" in data['effet'][carte]:
+            pass
+        else:
+            log.texte.append(f''' -> {current_player.name} utilise la carte "{data['nom'][carte]}" :''')
+        for i in range (data['nmb_effet'][carte]):
+            if current_player.blocked == True and ( data[f'effet_{i}'][carte] == "heal" or data[f'effet_{i}'][carte] == "armor"):
+                log.texte.append(f"{current_player.name} ne peut pas utiliser")
+                log.texte.append(f"de heal ou d'armure pendant")
+                log.texte.append(f"ce tour")
+                return
+        try:
+            current_player.hand.pop(current_player.hand.index(carte))
+        except:
+            return
+        for j in range (data['nmb_effet'][carte]):
+            effect(data[f'effet_{j}'][carte],data[f'valeur_effet_{j}'][carte], current_player, other_player)
+        current_player.current_stamina -= int(data["cout"][carte]) + current_player.stamina_increase
+
+def bot_turn(bot, player):
+    for i in bot.hand:
+        for j in range (data["nmb_effet"][i]):
+            if (data[f"effet_{j}"][i] == "damage" and data[f"valeur_effet_{j}"][i] >= player.hp) or data[f"effet_{j}"][i] == "kill" and bot.current_stamina >= data["cout"][i]:
+                play(i, bot, player)
+                    
+    if bot.hp + bot.armor < 10:
+        for i in bot.hand:
+            for j in range (data["nmb_effet"][i]):
+                if (data[f"effet_{j}"][i] == "heal" or data[f"effet_{j}"][i] == "armor" or data[f"effet_{j}"][i] == "mult_hp") and bot.current_stamina >= data["cout"][i]:
+                    play(i, bot, player)
+                    
+    endurance = bot.current_stamina
+    cout_main = [data["cout"][i] for i in bot.hand]
+    tampon_main = sorted(cout_main, reverse = True)
+    run = True
+    count = 0
+    num = 0
+    solution = []
+
+    while run:
+        card_played = []
+        card_index = []
+        tampon_endurance = endurance
+        for cout in tampon_main:
+            if tampon_endurance >= cout:
+                tampon_endurance -= cout
+                if cout_main.index(cout) in card_index:
+                    card_index.append([i for i, n in enumerate(cout_main) if n == cout])
+                else:
+                    card_index.append(cout_main.index(cout))
+                card_played.append(tampon_main[tampon_main.index(cout)])
+        if tampon_endurance == 0 + math.floor(count/100):
+            run = False
+        else:
+            tampon_main = sorted(cout_main, reverse = True)
+            random.shuffle(tampon_main)
+            count += 2
+        if count > 1000:
+            run = False
+
+    played_card = dict(zip(card_played, card_index))
+    for i in played_card.items():
+        i = i[1]
+        if type(i) == list:
+            for j in i:
+                solution.append(j)
+        else:
+            solution.append(i)
+    bot_tampon = copy.deepcopy(bot.hand)
+    for carte in solution:
+        play(bot_tampon[carte], bot, player)         
+    end_turn(bot, player)
+
+
+def end_turn(current_player, other_player):
+    global tour
+    tour += 0.5
+    current_player.blocked = False
+    current_player.stamina_increase = 0
+    current_player.power_used = False
+    current_player.can_play = False
+    current_player, other_player = other_player, current_player
+    current_player.can_play = True
+    draw(1, current_player)
+    if tour >= 2:
+        if current_player.stamina < 10:
+            current_player.stamina += 1
+    current_player.current_stamina = current_player.stamina
+    if current_player == player_2:
+        bot_turn(player_2, player_1)
+
+                                                                           
 def effect(effet, number, current_player, other_player):
     number = int(number)
     if effet == "draw":
@@ -851,7 +958,7 @@ def effect(effet, number, current_player, other_player):
         kill(other_player)
 
 def draw(number, player):
-    if len(player.deck) >= 1:
+    if len(player.deck) >= number:
         longueur = len(player.deck)-1
         for i in range(number):
             rand = random.randint(0,longueur)
@@ -1120,65 +1227,6 @@ def secret_pretre(player):
     else:
         log.texte.append("Le secret était déjà actif")
         player.current_stamina += 3 + player.stamina_increase
-    
-def game(player_1, player_2):
-    global tour, first, second
-    player = [player_1, player_2]
-    rand = random.randint(0,1)
-    first = player[rand]
-    second = player[not(rand)]
-    second.hand.append(50)
-    first.can_play = True
-    if first == player_2:
-        for i in range(5):
-            for carte in player_2.hand:
-                if player_2.current_stamina >= int(data["cout"][carte]):
-                    play(carte, player_2, player_1)
-        end_turn(player_2, player_1)
-
-
-def end_turn(current_player, other_player):
-    global tour
-    tour += 0.5
-    current_player.blocked = False
-    current_player.stamina_increase = 0
-    current_player.power_used = False
-    current_player.can_play = False
-    current_player, other_player = other_player, current_player
-    current_player.can_play = True
-    draw(1, current_player)
-    if tour >= 2:
-        if current_player.stamina < 10:
-            current_player.stamina += 1
-    current_player.current_stamina = current_player.stamina
-    if current_player == player_2:
-        for i in range(5):
-            for carte in player_2.hand:
-                if player_2.current_stamina >= int(data["cout"][carte]):
-                    play(carte, current_player, other_player)
-        end_turn(current_player, other_player)
-
-def play(carte, current_player, other_player):
-    can_play = True
-    if current_player.current_stamina < int(data["cout"][carte]):
-        can_play = False
-    if can_play == True:
-        if "Secret" in data['effet'][carte]:
-            pass
-        else:
-            log.texte.append(f''' -> {current_player.name} utilise la carte "{data['nom'][carte]}" :''')
-        for i in range (data['nmb_effet'][carte]):
-            if current_player.blocked == True and ( data[f'effet_{i}'][carte] == "heal" or data[f'effet_{i}'][carte] == "armor"):
-                log.texte.append(f"{current_player.name} ne peut pas utiliser")
-                log.texte.append(f"de heal ou d'armure pendant")
-                log.texte.append(f"ce tour")
-                continue
-        current_player.hand.pop(current_player.hand.index(carte))
-        for j in range (data['nmb_effet'][carte]):
-            effect(data[f'effet_{j}'][carte],data[f'valeur_effet_{j}'][carte], current_player, other_player)
-        current_player.current_stamina -= int(data["cout"][carte]) + current_player.stamina_increase
-        
-
 
 
 # ___  ___      _         _                   
